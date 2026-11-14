@@ -1,0 +1,239 @@
+/* ===== VARIABEL WARNA =====
+   Dengan variabel, warna mudah diubah di satu tempat saja. */
+:root {
+  --bg: #f4f6fb;
+  --white: #ffffff;
+  --text: #1f2937;
+  --text-light: #6b7280;
+  --primary: #4f46e5;
+  --income: #16a34a;
+  --expense: #dc2626;
+  --border: #e5e7eb;
+  --radius: 12px;
+}
+
+/* ===== RESET DASAR =====
+   Menghapus jarak bawaan browser agar tampilan konsisten. */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Wadah utama: dibatasi lebarnya dan diletakkan di tengah */
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+}
+
+.header p {
+  color: var(--text-light);
+}
+
+/* ===== KARTU RINGKASAN =====
+   Grid 3 kolom di layar besar. */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: var(--white);
+  padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.card-value {
+  font-size: 1.15rem;
+}
+
+.card-balance .card-value { color: var(--primary); }
+.card-income .card-value  { color: var(--income); }
+.card-expense .card-value { color: var(--expense); }
+
+/* ===== PANEL (kotak putih untuk form & riwayat) ===== */
+.panel {
+  background: var(--white);
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.panel h2 {
+  font-size: 1.15rem;
+  margin-bottom: 16px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.panel-header h2 {
+  margin-bottom: 0;
+}
+
+/* ===== FORM ===== */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  color: var(--text-light);
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--white);
+}
+
+/* Efek saat kolom diklik */
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Filter tidak perlu selebar form */
+.filter {
+  width: auto;
+}
+
+/* ===== TOMBOL ===== */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--primary);
+  color: var(--white);
+}
+
+.btn-small {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: var(--expense);
+}
+
+/* ===== DAFTAR TRANSAKSI ===== */
+.transaction-list {
+  list-style: none;
+}
+
+.transaction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  border-left: 4px solid transparent;
+  padding-left: 12px;
+}
+
+.transaction:last-child {
+  border-bottom: none;
+}
+
+/* Garis warna di kiri: hijau untuk pemasukan, merah untuk pengeluaran */
+.transaction.income  { border-left-color: var(--income); }
+.transaction.expense { border-left-color: var(--expense); }
+
+.transaction-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.transaction-info small {
+  color: var(--text-light);
+}
+
+.transaction-amount {
+  font-weight: 600;
+}
+
+.income .transaction-amount  { color: var(--income); }
+.expense .transaction-amount { color: var(--expense); }
+
+.transaction-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ===== RESPONSIF =====
+   Aturan di bawah hanya berlaku di layar ≤ 600px (HP). */
+@media (max-width: 600px) {
+  .summary {
+    grid-template-columns: 1fr; /* kartu menumpuk ke bawah */
+  }
+
+  .transaction {
+    flex-wrap: wrap;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter {
+    width: 100%;
+  }
+}
