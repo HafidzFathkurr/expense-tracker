@@ -217,6 +217,14 @@ select:focus {
   gap: 6px;
 }
 
+/* ===== PESAN KOSONG =====
+   Tampil saat belum ada transaksi. */
+.empty-message {
+  text-align: center;
+  color: var(--text-light);
+  padding: 24px 0;
+}
+
 /* ===== RESPONSIF =====
    Aturan di bawah hanya berlaku di layar ≤ 600px (HP). */
 @media (max-width: 600px) {
