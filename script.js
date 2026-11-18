@@ -5,8 +5,11 @@ const descriptionInput = document.getElementById("description");
 const amountInput = document.getElementById("amount");
 const categoryInput = document.getElementById("category");
 const dateInput = document.getElementById("date");
-// BARU: daftar tempat riwayat transaksi ditampilkan
 const transactionList = document.getElementById("transaction-list");
+// BARU: tiga kartu ringkasan di bagian atas
+const balanceElement = document.getElementById("balance");
+const totalIncomeElement = document.getElementById("total-income");
+const totalExpenseElement = document.getElementById("total-expense");
 
 
 // ===== 2. PENGATURAN PENYIMPANAN =====
@@ -47,20 +50,21 @@ function setTodayDate() {
 }
 
 
-// ===== 5. FUNGSI PEMBANTU UNTUK FORMAT (BARU) =====
+// ===== 5. FUNGSI PEMBANTU UNTUK FORMAT =====
 
-// Mengubah angka menjadi format Rupiah. Contoh: 25000 -> "Rp 25.000"
+// Mengubah angka menjadi format Rupiah.
+// DIPERBARUI: sekarang bisa menampilkan angka minus dengan benar.
+// Contoh: 25000 -> "Rp 25.000", -5000 -> "-Rp 5.000"
 function formatRupiah(number) {
-  // toLocaleString("id-ID") menambahkan titik pemisah ribuan ala Indonesia
-  return "Rp " + number.toLocaleString("id-ID");
+  // Jika angka minus, siapkan tanda "-" di depan
+  const sign = number < 0 ? "-" : "";
+
+  // Math.abs() mengubah angka minus menjadi plus (nilai mutlak)
+  return sign + "Rp " + Math.abs(number).toLocaleString("id-ID");
 }
 
-// Mengubah tanggal "2026-11-17" menjadi "17 Nov 2026"
 function formatDate(dateString) {
-  // split("-") memecah teks menjadi bagian: ["2026", "11", "17"]
   const parts = dateString.split("-");
-
-  // new Date(tahun, bulan, tanggal). Bulan dimulai dari 0, jadi dikurangi 1.
   const date = new Date(parts[0], parts[1] - 1, parts[2]);
 
   return date.toLocaleDateString("id-ID", {
@@ -71,15 +75,11 @@ function formatDate(dateString) {
 }
 
 
-// ===== 6. MENAMPILKAN RIWAYAT TRANSAKSI (BARU) =====
-
-// Membuat SATU baris transaksi (elemen <li>) dari satu data transaksi.
+// ===== 6. MENAMPILKAN RIWAYAT TRANSAKSI =====
 function createTransactionItem(transaction) {
-  // Elemen utama. Class "income" atau "expense" mengatur warna garis kiri.
   const item = document.createElement("li");
   item.className = "transaction " + transaction.type;
 
-  // --- Bagian kiri: deskripsi, kategori, dan tanggal ---
   const info = document.createElement("div");
   info.className = "transaction-info";
 
@@ -92,20 +92,18 @@ function createTransactionItem(transaction) {
   info.appendChild(title);
   info.appendChild(detail);
 
-  // --- Bagian tengah: nominal ---
   const amount = document.createElement("span");
   amount.className = "transaction-amount";
   const sign = transaction.type === "income" ? "+" : "-";
   amount.textContent = `${sign} ${formatRupiah(transaction.amount)}`;
 
-  // --- Bagian kanan: tombol Edit dan Hapus (belum berfungsi) ---
   const actions = document.createElement("div");
   actions.className = "transaction-actions";
 
   const editButton = document.createElement("button");
   editButton.className = "btn btn-small edit-btn";
   editButton.textContent = "Edit";
-  editButton.dataset.id = transaction.id; // menyimpan id untuk dipakai nanti
+  editButton.dataset.id = transaction.id;
 
   const deleteButton = document.createElement("button");
   deleteButton.className = "btn btn-small btn-danger delete-btn";
@@ -115,7 +113,6 @@ function createTransactionItem(transaction) {
   actions.appendChild(editButton);
   actions.appendChild(deleteButton);
 
-  // Gabungkan semua bagian ke dalam <li>
   item.appendChild(info);
   item.appendChild(amount);
   item.appendChild(actions);
@@ -123,34 +120,66 @@ function createTransactionItem(transaction) {
   return item;
 }
 
-// Menampilkan seluruh transaksi ke halaman.
 function renderTransactions() {
-  // Kosongkan daftar dulu agar tidak terjadi data ganda
   transactionList.innerHTML = "";
 
-  // Jika belum ada transaksi, tampilkan pesan kosong
   if (transactions.length === 0) {
     const emptyMessage = document.createElement("li");
     emptyMessage.className = "empty-message";
     emptyMessage.textContent = "Belum ada transaksi. Yuk, tambahkan yang pertama!";
     transactionList.appendChild(emptyMessage);
-    return; // berhenti di sini
+    return;
   }
 
-  // Urutkan dari tanggal terbaru. Jika tanggalnya sama, id terbesar (paling baru dibuat) di atas.
-  // [...transactions] membuat salinan agar urutan array asli tidak ikut berubah.
   const sortedTransactions = [...transactions].sort(function (a, b) {
     return b.date.localeCompare(a.date) || b.id - a.id;
   });
 
-  // Untuk setiap transaksi, buat baris lalu masukkan ke daftar
   sortedTransactions.forEach(function (transaction) {
     transactionList.appendChild(createTransactionItem(transaction));
   });
 }
 
 
-// ===== 7. FUNGSI MENANGANI FORM =====
+// ===== 7. MENGHITUNG DAN MENAMPILKAN RINGKASAN (BARU) =====
+function updateSummary() {
+  // Mulai dari 0, lalu tambahkan nominal satu per satu
+  let totalIncome = 0;
+  let totalExpense = 0;
+
+  // Periksa setiap transaksi: pemasukan atau pengeluaran?
+  transactions.forEach(function (transaction) {
+    if (transaction.type === "income") {
+      totalIncome += transaction.amount;   // += artinya "tambahkan ke nilai sebelumnya"
+    } else {
+      totalExpense += transaction.amount;
+    }
+  });
+
+  // Saldo = total pemasukan dikurangi total pengeluaran
+  const balance = totalIncome - totalExpense;
+
+  // Tampilkan hasilnya ke kartu di halaman
+  balanceElement.textContent = formatRupiah(balance);
+  totalIncomeElement.textContent = formatRupiah(totalIncome);
+  totalExpenseElement.textContent = formatRupiah(totalExpense);
+
+  // Jika saldo minus, beri class "negative" agar tulisannya merah.
+  // toggle(nama, kondisi): tambahkan class jika kondisi benar, hapus jika salah.
+  balanceElement.classList.toggle("negative", balance < 0);
+}
+
+
+// ===== 8. MEMPERBARUI TAMPILAN (BARU) =====
+// Satu fungsi yang memperbarui riwayat DAN ringkasan sekaligus.
+// Setiap kali data berubah (tambah, hapus, edit), cukup panggil fungsi ini.
+function refreshView() {
+  renderTransactions();
+  updateSummary();
+}
+
+
+// ===== 9. FUNGSI MENANGANI FORM =====
 function handleFormSubmit(event) {
   event.preventDefault();
 
@@ -190,8 +219,8 @@ function handleFormSubmit(event) {
   transactions.push(transaction);
   saveTransactions();
 
-  // BARU: tampilkan ulang riwayat agar transaksi baru langsung muncul
-  renderTransactions();
+  // DIPERBARUI: perbarui riwayat dan ringkasan sekaligus
+  refreshView();
 
   // ----- MEMBERSIHKAN FORM -----
   descriptionInput.value = "";
@@ -200,10 +229,10 @@ function handleFormSubmit(event) {
 }
 
 
-// ===== 8. MENYAMBUNGKAN FORM DENGAN FUNGSI =====
+// ===== 10. MENYAMBUNGKAN FORM DENGAN FUNGSI =====
 form.addEventListener("submit", handleFormSubmit);
 
 
-// ===== 9. MENJALANKAN SAAT HALAMAN DIMUAT =====
+// ===== 11. MENJALANKAN SAAT HALAMAN DIMUAT =====
 setTodayDate();
-renderTransactions(); // BARU: tampilkan data yang tersimpan saat halaman dibuka
+refreshView(); // DIPERBARUI: tampilkan riwayat dan ringkasan dari data tersimpan

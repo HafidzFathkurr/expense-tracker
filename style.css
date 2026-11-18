@@ -79,6 +79,10 @@ body {
 .card-balance .card-value { color: var(--primary); }
 .card-income .card-value  { color: var(--income); }
 .card-expense .card-value { color: var(--expense); }
+/* Saldo berubah merah jika nilainya minus */
+.card-balance .card-value.negative {
+  color: var(--expense);
+}
 
 /* ===== PANEL (kotak putih untuk form & riwayat) ===== */
 .panel {
