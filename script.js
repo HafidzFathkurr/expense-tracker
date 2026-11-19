@@ -6,7 +6,6 @@ const amountInput = document.getElementById("amount");
 const categoryInput = document.getElementById("category");
 const dateInput = document.getElementById("date");
 const transactionList = document.getElementById("transaction-list");
-// BARU: tiga kartu ringkasan di bagian atas
 const balanceElement = document.getElementById("balance");
 const totalIncomeElement = document.getElementById("total-income");
 const totalExpenseElement = document.getElementById("total-expense");
@@ -51,15 +50,8 @@ function setTodayDate() {
 
 
 // ===== 5. FUNGSI PEMBANTU UNTUK FORMAT =====
-
-// Mengubah angka menjadi format Rupiah.
-// DIPERBARUI: sekarang bisa menampilkan angka minus dengan benar.
-// Contoh: 25000 -> "Rp 25.000", -5000 -> "-Rp 5.000"
 function formatRupiah(number) {
-  // Jika angka minus, siapkan tanda "-" di depan
   const sign = number < 0 ? "-" : "";
-
-  // Math.abs() mengubah angka minus menjadi plus (nilai mutlak)
   return sign + "Rp " + Math.abs(number).toLocaleString("id-ID");
 }
 
@@ -141,45 +133,61 @@ function renderTransactions() {
 }
 
 
-// ===== 7. MENGHITUNG DAN MENAMPILKAN RINGKASAN (BARU) =====
+// ===== 7. MENGHITUNG DAN MENAMPILKAN RINGKASAN =====
 function updateSummary() {
-  // Mulai dari 0, lalu tambahkan nominal satu per satu
   let totalIncome = 0;
   let totalExpense = 0;
 
-  // Periksa setiap transaksi: pemasukan atau pengeluaran?
   transactions.forEach(function (transaction) {
     if (transaction.type === "income") {
-      totalIncome += transaction.amount;   // += artinya "tambahkan ke nilai sebelumnya"
+      totalIncome += transaction.amount;
     } else {
       totalExpense += transaction.amount;
     }
   });
 
-  // Saldo = total pemasukan dikurangi total pengeluaran
   const balance = totalIncome - totalExpense;
 
-  // Tampilkan hasilnya ke kartu di halaman
   balanceElement.textContent = formatRupiah(balance);
   totalIncomeElement.textContent = formatRupiah(totalIncome);
   totalExpenseElement.textContent = formatRupiah(totalExpense);
 
-  // Jika saldo minus, beri class "negative" agar tulisannya merah.
-  // toggle(nama, kondisi): tambahkan class jika kondisi benar, hapus jika salah.
   balanceElement.classList.toggle("negative", balance < 0);
 }
 
 
-// ===== 8. MEMPERBARUI TAMPILAN (BARU) =====
-// Satu fungsi yang memperbarui riwayat DAN ringkasan sekaligus.
-// Setiap kali data berubah (tambah, hapus, edit), cukup panggil fungsi ini.
+// ===== 8. MEMPERBARUI TAMPILAN =====
 function refreshView() {
   renderTransactions();
   updateSummary();
 }
 
 
-// ===== 9. FUNGSI MENANGANI FORM =====
+// ===== 9. MENGHAPUS TRANSAKSI (BARU) =====
+function deleteTransaction(id) {
+  // confirm() menampilkan kotak pertanyaan Ya/Batal.
+  // Hasilnya true jika pengguna menekan OK, false jika Batal.
+  const isSure = confirm("Yakin ingin menghapus transaksi ini?");
+
+  // Jika pengguna menekan Batal, hentikan fungsi
+  if (!isSure) {
+    return;
+  }
+
+  // filter() membuat array BARU yang hanya berisi transaksi
+  // yang id-nya TIDAK sama dengan id yang ingin dihapus.
+  // Artinya, transaksi dengan id tersebut "tersaring" keluar.
+  transactions = transactions.filter(function (transaction) {
+    return transaction.id !== id;
+  });
+
+  // Simpan array terbaru ke LocalStorage, lalu perbarui tampilan
+  saveTransactions();
+  refreshView();
+}
+
+
+// ===== 10. FUNGSI MENANGANI FORM =====
 function handleFormSubmit(event) {
   event.preventDefault();
 
@@ -218,8 +226,6 @@ function handleFormSubmit(event) {
   // ----- MENYIMPAN TRANSAKSI -----
   transactions.push(transaction);
   saveTransactions();
-
-  // DIPERBARUI: perbarui riwayat dan ringkasan sekaligus
   refreshView();
 
   // ----- MEMBERSIHKAN FORM -----
@@ -229,10 +235,30 @@ function handleFormSubmit(event) {
 }
 
 
-// ===== 10. MENYAMBUNGKAN FORM DENGAN FUNGSI =====
+// ===== 11. MENANGANI KLIK PADA DAFTAR TRANSAKSI (BARU) =====
+// Tombol Hapus dibuat ulang setiap kali daftar digambar, jadi kita tidak
+// memasang pendengar di tiap tombol. Cukup satu pendengar di daftarnya saja.
+// Teknik ini disebut "event delegation".
+function handleListClick(event) {
+  // event.target adalah elemen yang benar-benar diklik
+  const clickedElement = event.target;
+
+  // Apakah yang diklik adalah tombol Hapus?
+  if (clickedElement.classList.contains("delete-btn")) {
+    // dataset.id berupa teks, jadi diubah menjadi angka agar cocok dengan id transaksi
+    const id = Number(clickedElement.dataset.id);
+    deleteTransaction(id);
+  }
+
+  // Tombol Edit akan ditangani di Tahap 7
+}
+
+
+// ===== 12. MENYAMBUNGKAN KEJADIAN DENGAN FUNGSI =====
 form.addEventListener("submit", handleFormSubmit);
+transactionList.addEventListener("click", handleListClick); // BARU
 
 
-// ===== 11. MENJALANKAN SAAT HALAMAN DIMUAT =====
+// ===== 13. MENJALANKAN SAAT HALAMAN DIMUAT =====
 setTodayDate();
-refreshView(); // DIPERBARUI: tampilkan riwayat dan ringkasan dari data tersimpan
+refreshView();
