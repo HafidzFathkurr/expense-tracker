@@ -229,6 +229,17 @@ select:focus {
   padding: 24px 0;
 }
 
+/* ===== MODE EDIT ===== */
+.btn-cancel {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Class untuk menyembunyikan elemen */
+.hidden {
+  display: none;
+}
+
 /* ===== RESPONSIF =====
    Aturan di bawah hanya berlaku di layar ≤ 600px (HP). */
 @media (max-width: 600px) {

@@ -9,6 +9,10 @@ const transactionList = document.getElementById("transaction-list");
 const balanceElement = document.getElementById("balance");
 const totalIncomeElement = document.getElementById("total-income");
 const totalExpenseElement = document.getElementById("total-expense");
+// BARU: elemen yang berubah saat masuk mode edit
+const formTitle = document.getElementById("form-title");
+const submitButton = document.getElementById("submit-btn");
+const cancelButton = document.getElementById("cancel-btn");
 
 
 // ===== 2. PENGATURAN PENYIMPANAN =====
@@ -36,6 +40,10 @@ function saveTransactions() {
 
 // ===== 3. DATA UTAMA APLIKASI =====
 let transactions = loadTransactions();
+
+// BARU: menyimpan id transaksi yang sedang diedit.
+// Nilai null artinya form sedang dalam mode "tambah" (bukan edit).
+let editingId = null;
 
 
 // ===== 4. MENGISI TANGGAL OTOMATIS =====
@@ -163,31 +171,81 @@ function refreshView() {
 }
 
 
-// ===== 9. MENGHAPUS TRANSAKSI (BARU) =====
+// ===== 9. MODE EDIT (BARU) =====
+
+// Mengembalikan form ke kondisi awal (mode "tambah").
+function resetForm() {
+  editingId = null;                  // tidak ada lagi yang sedang diedit
+
+  typeInput.value = "income";        // kembalikan pilihan ke default
+  descriptionInput.value = "";
+  amountInput.value = "";
+  categoryInput.selectedIndex = 0;   // pilih kategori pertama di daftar
+  setTodayDate();
+
+  // Kembalikan teks dan tombol seperti semula
+  formTitle.textContent = "Tambah Transaksi";
+  submitButton.textContent = "Simpan Transaksi";
+  cancelButton.classList.add("hidden");   // sembunyikan tombol Batal
+}
+
+// Memasukkan data transaksi ke form agar bisa diubah.
+function startEdit(id) {
+  // find() mencari SATU transaksi yang id-nya cocok.
+  // Hasilnya adalah objek transaksi itu sendiri (atau undefined jika tidak ada).
+  const transaction = transactions.find(function (item) {
+    return item.id === id;
+  });
+
+  // Pengaman: jika tidak ketemu, hentikan fungsi
+  if (!transaction) {
+    return;
+  }
+
+  // Isi form dengan data transaksi yang dipilih
+  typeInput.value = transaction.type;
+  descriptionInput.value = transaction.description;
+  amountInput.value = transaction.amount;
+  categoryInput.value = transaction.category;
+  dateInput.value = transaction.date;
+
+  // Catat id yang sedang diedit
+  editingId = id;
+
+  // Ubah tampilan form menjadi mode edit
+  formTitle.textContent = "Edit Transaksi";
+  submitButton.textContent = "Perbarui Transaksi";
+  cancelButton.classList.remove("hidden");   // tampilkan tombol Batal
+
+  // Gulir halaman ke form agar langsung terlihat (berguna di HP)
+  form.scrollIntoView({ behavior: "smooth" });
+}
+
+
+// ===== 10. MENGHAPUS TRANSAKSI =====
 function deleteTransaction(id) {
-  // confirm() menampilkan kotak pertanyaan Ya/Batal.
-  // Hasilnya true jika pengguna menekan OK, false jika Batal.
   const isSure = confirm("Yakin ingin menghapus transaksi ini?");
 
-  // Jika pengguna menekan Batal, hentikan fungsi
   if (!isSure) {
     return;
   }
 
-  // filter() membuat array BARU yang hanya berisi transaksi
-  // yang id-nya TIDAK sama dengan id yang ingin dihapus.
-  // Artinya, transaksi dengan id tersebut "tersaring" keluar.
   transactions = transactions.filter(function (transaction) {
     return transaction.id !== id;
   });
 
-  // Simpan array terbaru ke LocalStorage, lalu perbarui tampilan
   saveTransactions();
+
+  // BARU: jika transaksi yang dihapus sedang diedit, keluar dari mode edit
+  if (editingId === id) {
+    resetForm();
+  }
+
   refreshView();
 }
 
 
-// ===== 10. FUNGSI MENANGANI FORM =====
+// ===== 11. FUNGSI MENANGANI FORM (DIPERBARUI) =====
 function handleFormSubmit(event) {
   event.preventDefault();
 
@@ -213,52 +271,65 @@ function handleFormSubmit(event) {
     return;
   }
 
-  // ----- MEMBUAT OBJEK TRANSAKSI -----
-  const transaction = {
-    id: Date.now(),
-    type: type,
-    description: description,
-    amount: amount,
-    category: category,
-    date: date
-  };
+  // ----- PILIH: MODE TAMBAH ATAU MODE EDIT? -----
+  if (editingId === null) {
+    // MODE TAMBAH: buat transaksi baru
+    const transaction = {
+      id: Date.now(),
+      type: type,
+      description: description,
+      amount: amount,
+      category: category,
+      date: date
+    };
 
-  // ----- MENYIMPAN TRANSAKSI -----
-  transactions.push(transaction);
+    transactions.push(transaction);
+
+  } else {
+    // MODE EDIT: cari transaksi lama, lalu ganti isinya.
+    // Id TIDAK diubah, supaya tetap transaksi yang sama.
+    const transaction = transactions.find(function (item) {
+      return item.id === editingId;
+    });
+
+    transaction.type = type;
+    transaction.description = description;
+    transaction.amount = amount;
+    transaction.category = category;
+    transaction.date = date;
+  }
+
+  // ----- SIMPAN, TAMPILKAN ULANG, DAN BERSIHKAN FORM -----
   saveTransactions();
   refreshView();
-
-  // ----- MEMBERSIHKAN FORM -----
-  descriptionInput.value = "";
-  amountInput.value = "";
-  setTodayDate();
+  resetForm();
 }
 
 
-// ===== 11. MENANGANI KLIK PADA DAFTAR TRANSAKSI (BARU) =====
-// Tombol Hapus dibuat ulang setiap kali daftar digambar, jadi kita tidak
-// memasang pendengar di tiap tombol. Cukup satu pendengar di daftarnya saja.
-// Teknik ini disebut "event delegation".
+// ===== 12. MENANGANI KLIK PADA DAFTAR TRANSAKSI (DIPERBARUI) =====
 function handleListClick(event) {
-  // event.target adalah elemen yang benar-benar diklik
   const clickedElement = event.target;
 
-  // Apakah yang diklik adalah tombol Hapus?
+  // Tombol Hapus
   if (clickedElement.classList.contains("delete-btn")) {
-    // dataset.id berupa teks, jadi diubah menjadi angka agar cocok dengan id transaksi
     const id = Number(clickedElement.dataset.id);
     deleteTransaction(id);
   }
 
-  // Tombol Edit akan ditangani di Tahap 7
+  // BARU: Tombol Edit
+  if (clickedElement.classList.contains("edit-btn")) {
+    const id = Number(clickedElement.dataset.id);
+    startEdit(id);
+  }
 }
 
 
-// ===== 12. MENYAMBUNGKAN KEJADIAN DENGAN FUNGSI =====
+// ===== 13. MENYAMBUNGKAN KEJADIAN DENGAN FUNGSI =====
 form.addEventListener("submit", handleFormSubmit);
-transactionList.addEventListener("click", handleListClick); // BARU
+transactionList.addEventListener("click", handleListClick);
+cancelButton.addEventListener("click", resetForm); // BARU: Batal = kembali ke mode tambah
 
 
-// ===== 13. MENJALANKAN SAAT HALAMAN DIMUAT =====
+// ===== 14. MENJALANKAN SAAT HALAMAN DIMUAT =====
 setTodayDate();
 refreshView();
